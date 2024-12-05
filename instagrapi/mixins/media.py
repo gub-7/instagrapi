@@ -1165,7 +1165,6 @@ class MediaMixin:
         broadcast_id = result['broadcast_id']
         if auto_start:
             startRes = self.media_start_livestream(broadcast_id)
-            print(startRes)
         return result
 
     def media_start_livestream(self, broadcast_id):
