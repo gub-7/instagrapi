@@ -1171,3 +1171,9 @@ class MediaMixin:
     def media_start_livestream(self, broadcast_id):
         result = self.private_request(f"live/{broadcast_id}/start/", {'empty': None})
         return result["status"] == "ok"
+
+    def media_fetch_live_chat(self, broadcast_id, last_comment_ts=None):
+        params = None
+        if last_comment_ts:
+            params = {'last_comment_ts': last_comment_ts}
+        return self.private_request(f"live/{broadcast_id}/get_comment/", params=params)
