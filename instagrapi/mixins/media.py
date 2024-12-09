@@ -1168,7 +1168,7 @@ class MediaMixin:
         return result
 
     def media_start_livestream(self, broadcast_id):
-        result = self.private_request(f"live/{broadcast_id}/start/", {'empty': None})
+        result = self.private_request(f"live/{broadcast_id}/start/", data={'empty': None})
         return result["status"] == "ok"
 
     def media_fetch_live_chat(self, broadcast_id, last_comment_ts=None):
@@ -1176,3 +1176,7 @@ class MediaMixin:
         if last_comment_ts:
             params = {'last_comment_ts': last_comment_ts}
         return self.private_request(f"live/{broadcast_id}/get_comment/", params=params)
+
+    def media_heartbeat_viewer_count(self, broadcast_id):
+        return self.private_request(f"live/{broadcast_id}/heartbeat_and_get_viewer_count/", data={'empty': None})
+
