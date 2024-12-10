@@ -469,24 +469,38 @@ class ChallengeResolveMixin:
              'status': 'ok'}
             """
             wait_seconds = 5
+            # First step: Submit phone number
             for attempt in range(24):
                 phone = self.challenge_code_handler(self.username, "phone_number")
                 if phone:
                     break
                 time.sleep(wait_seconds)
             print(f'Phone number entered "{phone}" for {self.username} ({attempt} attempts by {wait_seconds} seconds)')
-            self._send_private_request(challenge_url, {"phone_number": phone})
 
-            # Handle the verification code that will be sent
-            for attempt in range(24):
-                code = self.challenge_code_handler(self.username, ChallengeChoice.SMS)
-                if code:
-                    break
-                time.sleep(wait_seconds)
-            print(f'Code entered "{code}" for {self.username} ({attempt} attempts by {wait_seconds} seconds)')
-            self._send_private_request(challenge_url, {"security_code": code})
+            response = self._send_private_request(challenge_url, {"phone_number": phone})
+            if not response.get("status") == "ok":
+                raise ChallengeError(f"Failed to submit phone number: {response}")
 
-            assert self.last_json.get("status", "") == "ok"
+            # Second step: Handle verification code
+            # Wait for the next challenge step which should be verify_code
+            if self.last_json.get("step_name") in ["verify_code", "verify_sms_code", "verify_phone_code"]:
+                for attempt in range(24):
+                    code = self.challenge_code_handler(self.username, ChallengeChoice.SMS)
+                    if code:
+                        break
+                    time.sleep(wait_seconds)
+                print(f'Code entered "{code}" for {self.username} ({attempt} attempts by {wait_seconds} seconds)')
+
+                response = self._send_private_request(challenge_url, {
+                    "security_code": code,
+                    "verification_code": code,  # Some endpoints use this name
+                    "phone_number": phone,
+                    "verify_code": code  # Adding additional parameter name
+                })
+
+                if not response.get("status") == "ok":
+                    raise ChallengeError(f"Failed to verify code: {response}")
+
             return True
 
         elif step_name == "select_contact_point_recovery":
