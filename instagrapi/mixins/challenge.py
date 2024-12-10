@@ -456,6 +456,39 @@ class ChallengeResolveMixin:
             return self.bloks_change_password(pwd, self.last_json["challenge_context"])
         elif step_name == "selfie_captcha":
             raise ChallengeSelfieCaptcha(self.last_json)
+        elif step_name == "submit_phone":
+            """
+            Handle phone number submission challenge
+            {'step_name': 'submit_phone',
+             'step_data': {'phone_number': 'None',
+                          'show_whatsapp_otp_choice': False,
+                          'whatsapp': False},
+             'flow_render_type': 3,
+             'bloks_action': 'com.instagram.challenge.navigation.take_challenge',
+             'challenge_type_enum_str': 'SMS',
+             'status': 'ok'}
+            """
+            wait_seconds = 5
+            for attempt in range(24):
+                phone = self.challenge_code_handler(self.username, "phone_number")
+                if phone:
+                    break
+                time.sleep(wait_seconds)
+            print(f'Phone number entered "{phone}" for {self.username} ({attempt} attempts by {wait_seconds} seconds)')
+            self._send_private_request(challenge_url, {"phone_number": phone})
+
+            # Handle the verification code that will be sent
+            for attempt in range(24):
+                code = self.challenge_code_handler(self.username, ChallengeChoice.SMS)
+                if code:
+                    break
+                time.sleep(wait_seconds)
+            print(f'Code entered "{code}" for {self.username} ({attempt} attempts by {wait_seconds} seconds)')
+            self._send_private_request(challenge_url, {"security_code": code})
+
+            assert self.last_json.get("status", "") == "ok"
+            return True
+
         elif step_name == "select_contact_point_recovery":
             """
             {
